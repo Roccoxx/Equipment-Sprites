@@ -1,5 +1,5 @@
 # Equipment-Sprites
-https://i.imgur.com/aVBboXE.png
+![Image of equipmentsprites](https://github.com/Roccoxx/Equipment-Sprites/blob/master/equipmentsprites.png)
 
 Display sprites on client head in freezetime!
 
