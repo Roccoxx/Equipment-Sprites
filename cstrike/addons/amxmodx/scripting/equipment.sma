@@ -122,19 +122,21 @@ public ShowSprites(iEnt){
 	if(!is_valid_ent(iEnt)) return PLUGIN_HANDLED;
 
 	static i, j;
-	static iMoney, szMoney[6], szValue[2];
+	static szMoney[6], szValue[2];
 	static iWeapons, bPistols, bRifles, iArmortype;
 
 	for(i = 1; i <= MAX_PLAYERS; i++){
 		if(!is_user_alive(i)) continue;
 
-		iMoney = cs_get_user_money(i); num_to_str(iMoney, szMoney, charsmax(szMoney));
+		arrayset(szMoney, 0, 6);
+
+		num_to_str(cs_get_user_money(i), szMoney, charsmax(szMoney));
 
 		for(j = 0; j < sizeof(szMoneySprites); j++){
 			szValue[0] = szMoney[j]; szValue[1] = 0;
 
 			if(!szMoney[j]) DisplaySprite(g_iPlayerMoneySprites[i][j], i, 1.0, 34.0, 0, 0, 255, 0);
-			else DisplaySprite(g_iPlayerMoneySprites[i][j], i, floatstr(szValue), 34.0, 255,0, 255, 0);
+			else DisplaySprite(g_iPlayerMoneySprites[i][j], i, floatstr(szValue), 34.0, 255, 0, 255, 0);
 		}
 
 		DisplaySprite(g_iPlayerDolarSign[i], i, 1.0, 34.0, 255, 0, 255, 0);
