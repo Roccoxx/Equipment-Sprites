@@ -189,11 +189,14 @@ DisplaySprite(const iEnt, iPlayer, Float:fFrame, Float:fOffset, const iRender, c
 {
 	if(!is_valid_ent(iEnt)) return;
 
-	set_entity_visibility(iEnt, 1);
 	entity_set_float(iEnt, EV_FL_frame, fFrame);
-	set_rendering(iEnt, kRenderFxNone, iRed, iGreen, iBlue, kRenderTransAdd, iRender);
-	static Float:vPlayerOrigin[3]; entity_get_vector(iPlayer, EV_VEC_origin, vPlayerOrigin); vPlayerOrigin[2] += fOffset; 
-	entity_set_vector(iEnt, EV_VEC_origin, vPlayerOrigin);
+	set_ent_rendering(iEnt, kRenderFxNone, iRed, iGreen, iBlue, kRenderTransAdd, iRender);
+
+	static Float:vPlayerOrigin[3];
+	entity_get_vector(iPlayer, EV_VEC_origin, vPlayerOrigin);
+	vPlayerOrigin[2] += fOffset + 10.0; 
+
+	entity_set_origin(iEnt, vPlayerOrigin);
 }
 
 SetEntityAttribs(const iEnt, const szModel[]){
@@ -201,23 +204,34 @@ SetEntityAttribs(const iEnt, const szModel[]){
 	entity_set_int(iEnt, EV_INT_movetype, MOVETYPE_NOCLIP);
 	entity_set_float(iEnt, EV_FL_framerate, 1.0);
 	entity_set_float(iEnt, EV_FL_scale, 0.3);
-	set_entity_visibility(iEnt, 0);
+
+	set_ent_rendering(iEnt, kRenderFxNone, _, _, _, kRenderTransAdd, 0);
 }
 
-public HideEntities(){
+public HideEntities()
+{
 	if(is_valid_ent(g_iEntPijuda)){
 		remove_entity(g_iEntPijuda);
 		g_iEntPijuda = 0;
 	}
 
 	new i;
-	for(new iId = 1; iId <= MAX_PLAYERS; iId++){
-		for(i = 0; i < sizeof(szMoneySprites); i++) if(is_valid_ent(g_iPlayerMoneySprites[iId][i])) set_entity_visibility(g_iPlayerMoneySprites[iId][i], 0);
 
-		for(i = 0; i < WEAPON_SPRITES; i++) if(is_valid_ent(g_iPlayerWeaponsSprites[iId][i])) set_entity_visibility(g_iPlayerWeaponsSprites[iId][i], 0);
+	for(new iId = 1; iId <= MAX_PLAYERS; iId++)
+	{
+		for(i = 0; i < sizeof(szMoneySprites); i++)
+			if(is_valid_ent(g_iPlayerMoneySprites[iId][i])) 
+				set_ent_rendering(g_iPlayerMoneySprites[iId][i], kRenderFxNone, _, _, _, kRenderTransAdd, 0);
+
+		for(i = 0; i < WEAPON_SPRITES; i++)
+			if(is_valid_ent(g_iPlayerWeaponsSprites[iId][i]))
+				set_ent_rendering(g_iPlayerWeaponsSprites[iId][i], kRenderFxNone, _, _, _, kRenderTransAdd, 0);
 	
-		if(is_valid_ent(g_iPlayerDolarSign[iId])) set_entity_visibility(g_iPlayerDolarSign[iId], 0);
-		if(is_valid_ent(g_iPlayerArrow[iId])) set_entity_visibility(g_iPlayerArrow[iId], 0);
+		if(is_valid_ent(g_iPlayerDolarSign[iId])) 
+			set_ent_rendering(g_iPlayerDolarSign[iId], kRenderFxNone, _, _, _, kRenderTransAdd, 0);
+
+		if(is_valid_ent(g_iPlayerArrow[iId]))
+			set_ent_rendering(g_iPlayerArrow[iId], kRenderFxNone, _, _, _, kRenderTransAdd, 0);
 	}
 }
 
