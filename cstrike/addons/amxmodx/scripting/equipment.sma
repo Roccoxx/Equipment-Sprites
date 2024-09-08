@@ -3,9 +3,18 @@
 #include <cstrike>
 #include <fakemeta>
 
-#pragma semicolon 1
+static const PLUGIN[] = "EQUIPMENT SPRITES"; static const VERSION[] = "1.2"; static const AUTHOR[] = "DaniwA & Roccoxx";
 
-static const PLUGIN[] = "EQUIPMENT SPRITES"; static const VERSION[] = "1.0"; static const AUTHOR[] = "DaniwA & Roccoxx";
+//#define REAPI_COMPATIBILITY
+//#define PREVENT_OVERFLOW 1 // Uncomment this if you have players with high ping and overflow problems9
+
+#if defined REAPI_COMPATIBILITY
+#include <reapi>
+#else
+static const szMessageGameRestart[] = "#Game_will_restart_in";
+#endif
+
+#pragma semicolon 1
 
 #define IsPlayer(%0)            (1 <= %0 <= MAX_PLAYERS)
 #define GetPlayerBit(%0,%1)     (IsPlayer(%1) && (%0 & (1 << (%1 & 31))))
@@ -32,7 +41,14 @@ static const szClassNameEntPijuda[] = "EntityPijuda";
 static g_iEntPijuda;
 static const Float:SHOW_SPRITES_TIME = 0.2;
 
-static const szMessageGameRestart[] = "#Game_will_restart_in";
+#if defined PREVENT_OVERFLOW
+enum {
+	SHOW_MONEY_SPRITES,
+	SHOW_DOLAR_AND_ARROW_SPRITES,
+	SHOW_WEAPONS_SPRITES,
+	SHOW_NADES_AND_ARMOR_SPRITES
+}
+#endif
 
 public plugin_precache(){
 	new i;
@@ -54,14 +70,23 @@ public plugin_init(){
 
 	register_think(szClassNameEntPijuda, "ShowSprites");
 
-	register_logevent("LogEventRoundEnd", 2, "1=Round_End");
-	
+	#if defined REAPI_COMPATIBILITY
+	RegisterHookChain(RG_RoundEnd, "fwdRoundEnd", false);
+	#else
+	register_logevent("fwdRoundEnd", 2, "1=Round_End");
 	register_message(get_user_msgid("TextMsg"), "TextMsgMessage");
+	#endif
 }
 
-public LogEventRoundEnd(){
-	remove_task(TASK_REMOVE_ENT); 
-	HideEntities();
+#if defined REAPI_COMPATIBILITY
+public fwdRoundEnd(WinStatus:status, ScenarioEventEndRound:event, Float:tmDelay)
+{
+	ClearEntitiesForRoundEnding();
+}
+#else
+public fwdRoundEnd()
+{
+	ClearEntitiesForRoundEnding();
 }
 
 public TextMsgMessage()
@@ -70,7 +95,14 @@ public TextMsgMessage()
 	get_msg_arg_string(2, szMsg, charsmax(szMsg));
 	
 	if(equal(szMsg, szMessageGameRestart))
-		LogEventRoundEnd();
+		fwdRoundEnd();
+}
+#endif
+
+ClearEntitiesForRoundEnding()
+{
+	remove_task(TASK_REMOVE_ENT); 
+	HideEntities();
 }
 
 RemoveBaseEntity() {
@@ -88,6 +120,11 @@ public EventRoundStart()
 
 	if (is_valid_ent(g_iEntPijuda)) {
 		entity_set_string(g_iEntPijuda, EV_SZ_classname, szClassNameEntPijuda);
+
+		#if defined PREVENT_OVERFLOW
+			entity_set_int(g_iEntPijuda, EV_INT_iuser1, SHOW_MONEY_SPRITES);
+		#endif
+
 		entity_set_float(g_iEntPijuda, EV_FL_nextthink, get_gametime() + SHOW_SPRITES_TIME);
 	}
 
@@ -145,23 +182,139 @@ RemoveEntitiesOnDisconnect(const iId){
 	new i;
 
 	for (i = 0; i < sizeof(szMoneySprites); i++) {
-		remove_entity(g_iPlayerMoneySprites[iId][i]);
-		g_iPlayerMoneySprites[iId][i] = 0;
+		if (is_valid_ent(g_iPlayerMoneySprites[iId][i])) {
+			remove_entity(g_iPlayerMoneySprites[iId][i]);
+			g_iPlayerMoneySprites[iId][i] = 0;
+		}
 	}
 
 	for (i = 0; i < WEAPON_SPRITES; i++) {
-		remove_entity(g_iPlayerWeaponsSprites[iId][i]);
-		g_iPlayerWeaponsSprites[iId][i] = 0;
+		if (is_valid_ent(g_iPlayerWeaponsSprites[iId][i])) {
+			remove_entity(g_iPlayerWeaponsSprites[iId][i]);
+			g_iPlayerWeaponsSprites[iId][i] = 0;
+		}
 	}
 
-	remove_entity(g_iPlayerDolarSign[iId]);
-	remove_entity(g_iPlayerArrow[iId]); 
+	if (is_valid_ent(g_iPlayerDolarSign[iId])) {
+		remove_entity(g_iPlayerDolarSign[iId]);
+		g_iPlayerDolarSign[iId] = 0;
+	}
 
-	g_iPlayerDolarSign[iId] = 0;
-	g_iPlayerArrow[iId] = 0;
+	if (is_valid_ent(g_iPlayerArrow[iId])) {
+		remove_entity(g_iPlayerArrow[iId]); 
+		g_iPlayerArrow[iId] = 0;
+	}
 }
 
-public ShowSprites(iEnt){
+#if defined PREVENT_OVERFLOW
+public ShowSprites(iEnt) {
+	if (!is_valid_ent(iEnt)) 
+		return PLUGIN_HANDLED;
+
+	static i, j;
+	static szMoney[6], szValue[2];
+	static iWeapons, bPistols, bRifles, iArmortype;
+
+	static iState;
+	iState = entity_get_int(iEnt, EV_INT_iuser1);
+
+	for (i = 1; i <= MAX_PLAYERS; i++) {
+		if (!is_user_alive(i)) 
+			continue;
+
+		switch(iState) {
+			case SHOW_MONEY_SPRITES: {
+				arrayset(szMoney, 0, 6);
+
+				num_to_str(cs_get_user_money(i), szMoney, charsmax(szMoney));
+
+				for (j = 0; j < sizeof(szMoneySprites); j++) {
+					szValue[0] = szMoney[j]; 
+					szValue[1] = 0;
+
+					if(!szMoney[j]) 
+						DisplaySprite(g_iPlayerMoneySprites[i][j], i, 1.0, 34.0, 0, 0, 255, 0);
+					else 
+						DisplaySprite(g_iPlayerMoneySprites[i][j], i, floatstr(szValue), 34.0, 255, 0, 255, 0);
+				}
+			}
+			case SHOW_DOLAR_AND_ARROW_SPRITES: {
+				DisplaySprite(g_iPlayerDolarSign[i], i, 1.0, 34.0, 255, 0, 255, 0);
+				DisplaySprite(g_iPlayerArrow[i], i, 1.0, 34.0, 255, 255, 255, 0);
+			}
+			case SHOW_WEAPONS_SPRITES: {
+				iWeapons = pev(i, pev_weapons); 
+				bPistols = false; 
+				bRifles = false;
+
+				for (j = 0; j < sizeof (fPistols); j++) {
+					if (iWeapons & 1<<floatround(fPistols[j])) {
+						DisplaySprite(g_iPlayerWeaponsSprites[i][0], i, fPistols[j], 50.0, 255, 255, 255, 0);
+						bPistols = true;
+					}
+				}
+				
+				if (!bPistols) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][0], i, fPistols[0], 50.0, 0, 255, 255, 0);
+
+				for (j = 0; j < sizeof (fRifles); j++) {
+					if (iWeapons & 1<<floatround(fRifles[j])) {
+						DisplaySprite(g_iPlayerWeaponsSprites[i][1], i, fRifles[j], 50.0, 255, 255, 255, 0);
+						bRifles = true;
+					}
+				}
+
+				if (!bRifles) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][1], i, fRifles[0], 50.0, 0, 255, 255, 0);
+			}
+			case SHOW_NADES_AND_ARMOR_SPRITES: {
+				iWeapons = pev(i, pev_weapons); 
+
+				if (iWeapons & 1<<CSW_HEGRENADE) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][2], i, 4.0, 50.0, 255, 255, 255, 255);
+				else
+					DisplaySprite(g_iPlayerWeaponsSprites[i][2], i, 4.0, 50.0, 0, 255, 255, 255);
+				
+				if (iWeapons & 1<<CSW_FLASHBANG) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][3], i, 25.0, 50.0, 255, 255, 255, 255);
+				else 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][3], i, 25.0, 50.0, 0, 255, 255, 255);
+				
+				if (iWeapons & 1<<CSW_SMOKEGRENADE) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][4], i, 9.0, 50.0, 255, 255, 255, 255);
+				else 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][4], i, 9.0, 50.0, 0, 255, 255, 255);
+
+				cs_get_user_armor(i, CsArmorType:iArmortype);
+		
+				if (iArmortype == 2) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][5], i, 2.0, 50.0, 255, 0, 0, 255);
+				else if (iArmortype == 1) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][5], i, 1.0, 50.0, 255, 0, 0, 255);
+				else 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][5], i, 1.0, 50.0, 0, 0, 0, 255);
+
+				if (iWeapons & 1<<CSW_C4) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][6], i, 3.0, 50.0, 255, 0, 0, 255);
+				else if (cs_get_user_defuse(i)) 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][6], i, 4.0, 50.0, 255, 0, 0, 255);
+				else 
+					DisplaySprite(g_iPlayerWeaponsSprites[i][6], i, 3.0, 50.0, 0, 0, 0, 255);
+			}
+		}
+	}
+
+	if (iState == SHOW_NADES_AND_ARMOR_SPRITES)
+		entity_set_int(iEnt, EV_INT_iuser1, SHOW_MONEY_SPRITES);
+	else
+		entity_set_int(iEnt, EV_INT_iuser1, ++iState);
+
+	entity_set_float(iEnt, EV_FL_nextthink, get_gametime() + 0.3);
+
+	return PLUGIN_CONTINUE;
+}
+#else
+public ShowSprites(iEnt) {
 	if (!is_valid_ent(iEnt)) 
 		return PLUGIN_HANDLED;
 
@@ -249,6 +402,7 @@ public ShowSprites(iEnt){
 	entity_set_float(iEnt, EV_FL_nextthink, get_gametime() + 1.0);
 	return PLUGIN_CONTINUE;
 }
+#endif
 
 DisplaySprite(const iEnt, iPlayer, Float:fFrame, Float:fOffset, const iRender, const iRed, const iGreen, const iBlue)
 {
