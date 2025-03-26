@@ -87,19 +87,19 @@ public plugin_init()
 	register_think(szClassNameEntPijuda, "ShowSprites");
 
 	#if defined REAPI_COMPATIBILITY
-	RegisterHookChain(RG_RoundEnd, "fwdRoundEnd", false);
+		RegisterHookChain(RG_RoundEnd, "fwdRoundEnd", false);
 	#else
-	register_logevent("fwdRoundEnd", 2, "1=Round_End");
-	register_message(get_user_msgid("TextMsg"), "TextMsgMessage");
+		register_logevent("fwdRoundEnd", 2, "1=Round_End");
+		register_message(get_user_msgid("TextMsg"), "TextMsgMessage");
 	#endif
 
 	g_iCvarList[CVAR_SPRITE_WEAPON_COLOR] =	register_cvar("se_sprite_color_weapons", "255255000"); // default yellow
-	g_iCvarList[CVAR_SPRITE_MONEY_COLOR] =		register_cvar("se_sprite_color_money", "000255000"); // default green
-	g_iCvarList[CVAR_SPRITE_GRENADES_COLOR] =	register_cvar("se_sprite_color_grenades", "255255255"); // default white
-	g_iCvarList[CVAR_SPRITE_KEVLAR_HELMET_COLOR] =	register_cvar("se_sprite_color_vesthelm", "080000200"); // default purple
+	g_iCvarList[CVAR_SPRITE_MONEY_COLOR] = register_cvar("se_sprite_color_money", "000255000"); // default green
+	g_iCvarList[CVAR_SPRITE_GRENADES_COLOR] = register_cvar("se_sprite_color_grenades", "255255255"); // default white
+	g_iCvarList[CVAR_SPRITE_KEVLAR_HELMET_COLOR] = register_cvar("se_sprite_color_vesthelm", "080000200"); // default purple
 	g_iCvarList[CVAR_SPRITE_KEVLAR_COLOR] =	register_cvar("se_sprite_color_kevlar", "200000200"); // default pink
-	g_iCvarList[CVAR_SPRITE_ARROW_COLOR] =		register_cvar("se_sprite_color_arrow", "255255000"); // default yellow
-	g_iCvarList[CVAR_SPRITE_BOMB_COLOR] =		register_cvar("se_sprite_color_c4", "220080000"); // default orange
+	g_iCvarList[CVAR_SPRITE_ARROW_COLOR] = register_cvar("se_sprite_color_arrow", "255255000"); // default yellow
+	g_iCvarList[CVAR_SPRITE_BOMB_COLOR] = register_cvar("se_sprite_color_c4", "220080000"); // default orange
 	g_iCvarList[CVAR_SPRITE_DEFUSE_COLOR] =	register_cvar("se_sprite_color_defusekit", "000255000"); // default green
 }
 
